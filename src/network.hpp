@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <utility>
 #include <armadillo>
@@ -20,18 +21,40 @@ namespace deep_learning_cpp {
     using std::cout;
     using std::endl;
     using std::pair;
+    using std::ifstream;
     using arma::mat;
-    using arma::randu;
+    using arma::randn;
+    using arma::zeros;
     using arma::exp;
 
     class Network {
     public:
         Network(const vector<int> &sizes) : num_layers_(sizes.size()), sizes_(sizes) {
             for (size_t i = 1; i < num_layers_; i++) {
-                biases_.push_back(randu < mat > (sizes[i], 1));
-                weights_.push_back(randu < mat > (sizes[i], sizes[i - 1]));
+                biases_.push_back(randn < mat > (sizes[i], 1));
+                weights_.push_back(randn < mat > (sizes[i], sizes[i - 1]));
             }
-
+            /*
+            ifstream in_file("../data/wb");
+            for (size_t i = 1; i < num_layers_; i++) {
+                for (size_t row = 0; row < sizes[i]; row++) {
+                    for (size_t col = 0; col < sizes[i - 1]; col++) {
+                        double tmp;
+                        in_file >> tmp;
+                        weights_[i-1](row, col) = tmp;
+                    }
+                }
+            }
+            for (size_t i = 1; i < num_layers_; i++) {
+                for (size_t row = 0; row < sizes[i]; row++) {
+                    for (size_t col = 0; col < 1; col++) {
+                        double tmp;
+                        in_file >> tmp;
+                        biases_[i-1](row, col) = tmp;
+                    }
+                }
+            }
+             */
         }
 
         void SGD(vector<pair<mat, mat>> &training_data,
@@ -68,8 +91,8 @@ namespace deep_learning_cpp {
             vector<mat> nabla_w;
             vector<mat> nabla_b;
             for (size_t i = 1; i < num_layers_; i++) {
-                nabla_w.push_back(randu < mat > (sizes_[i], sizes_[i - 1]));
-                nabla_b.push_back(randu < mat > (sizes_[i], 1));
+                nabla_w.push_back(zeros(sizes_[i], sizes_[i - 1]));
+                nabla_b.push_back(zeros(sizes_[i], 1));
             }
             for (auto it = begin; it < end; it++) {
                 backprop(it->first, it->second, nabla_w, nabla_b);
@@ -109,9 +132,8 @@ namespace deep_learning_cpp {
         size_t evaluate(const vector<pair<mat, mat>> &test_data) const {
             size_t result = 0;
             for (const auto &item : test_data) {
-                cout << feedforward(item.first) << endl;
                 auto max_index = feedforward(item.first).index_max();
-                if (item.second[max_index] == 1) result++;
+                if ((int) item.second[max_index] == 1) result++;
             }
             return result;
         }

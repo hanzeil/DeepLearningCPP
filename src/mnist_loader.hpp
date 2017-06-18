@@ -62,7 +62,7 @@ namespace deep_learning_cpp {
         t1 = 16, t2 = 8;
         for (size_t i = 0; i < 10000; i++) {
             for (size_t j = 0; j < 784; j++) {
-                test_data[i].first(j, 0) = test_inputs_buffer[t1++];
+                test_data[i].first(j, 0) = ((unsigned char) test_inputs_buffer[t1++]) / 255.0;
             }
             test_data[i].second((size_t) test_results_buffer[t2++], 0) = 1;
         }
