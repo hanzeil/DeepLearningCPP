@@ -1,6 +1,12 @@
 //
-// Created by tangjinghao on 17-6-7.
+// network.hpp
 //
+// A module to implement the stochastic gradient descent learning
+// algorithm for a feedforward neural network.  Gradients are calculated
+// using backpropagation.  Note that I have focused on making the code
+// simple, easily readable, and easily modifiable.  It is not optimized,
+// and omits many desirable features.
+
 
 #ifndef DEEPLEARNINGCPP_NETWORK_HPP
 #define DEEPLEARNINGCPP_NETWORK_HPP
@@ -30,36 +36,34 @@ namespace deep_learning_cpp {
     class Network {
     public:
         Network(const vector<int> &sizes) : num_layers_(sizes.size()), sizes_(sizes) {
+            //   The vector ``sizes`` contains the number of neurons in the
+            // respective layers of the network.  For example, if the vector
+            // was {2, 3, 1} then it would be a three-layer network, with the
+            // first layer containing 2 neurons, the second layer 3 neurons,
+            // and the third layer 1 neuron.  The biases and weights for the
+            // network are initialized randomly, using a Gaussian
+            // distribution with mean 0, and variance 1.  Note that the first
+            // layer is assumed to be an input layer, and by convention we
+            // won't set any biases for those neurons, since biases are only
+            // ever used in computing the outputs from later layers.
+
             for (size_t i = 1; i < num_layers_; i++) {
                 biases_.push_back(randn < mat > (sizes[i], 1));
                 weights_.push_back(randn < mat > (sizes[i], sizes[i - 1]));
             }
-            /*
-            ifstream in_file("../data/wb");
-            for (size_t i = 1; i < num_layers_; i++) {
-                for (size_t row = 0; row < sizes[i]; row++) {
-                    for (size_t col = 0; col < sizes[i - 1]; col++) {
-                        double tmp;
-                        in_file >> tmp;
-                        weights_[i-1](row, col) = tmp;
-                    }
-                }
-            }
-            for (size_t i = 1; i < num_layers_; i++) {
-                for (size_t row = 0; row < sizes[i]; row++) {
-                    for (size_t col = 0; col < 1; col++) {
-                        double tmp;
-                        in_file >> tmp;
-                        biases_[i-1](row, col) = tmp;
-                    }
-                }
-            }
-             */
         }
 
         void SGD(vector<pair<mat, mat>> &training_data,
                  size_t epochs, size_t mini_batch_size, double eta,
                  const vector<pair<mat, mat>> &test_data) {
+            //   Train the neural network using mini-batch stochastic
+            // gradient descent.  The ``training_data`` is a vector of pair
+            // (x, y) representing the training inputs and the desired
+            // outputs.  The other non-optional parameters are self-explanatory.
+            // network will be evaluated against the test data after each
+            // epoch, and partial progress printed out.  This is useful for
+            // tracking progress, but slows things down substantially.
+
             for (size_t i = 0; i < epochs; i++) {
                 std::random_shuffle(training_data.begin(), training_data.end());
                 for (size_t j = 0; j < training_data.size() / mini_batch_size; j++) {
@@ -67,12 +71,12 @@ namespace deep_learning_cpp {
                                       min(training_data.end(), training_data.begin() + (j + 1) * mini_batch_size),
                                       eta);
                 }
-                cout << "Epoch {"
-                     << i << "}: {"
+                cout << "Epoch "
+                     << i << ": "
                      << evaluate(test_data)
-                     << "} / {"
+                     << " / "
                      << test_data.size()
-                     << "}"
+                     << ""
                      << endl;
             }
         }
@@ -80,6 +84,7 @@ namespace deep_learning_cpp {
 
     private:
         mat feedforward(mat a) const {
+            // Return the output of the network if ``a`` is input.
             for (size_t i = 0; i < weights_.size(); i++) {
                 a = sigmoid(weights_[i] * a + biases_[i]);
             }
@@ -88,6 +93,10 @@ namespace deep_learning_cpp {
 
         void update_mini_batch(vector<pair<mat, mat>>::iterator begin,
                                const vector<pair<mat, mat>>::iterator end, double eta) {
+            //   Update the network's weights and biases by applying
+            // gradient descent using backpropagation to a single mini batch.
+            // The ``mini_batch`` is a pair of iterators (begin, end) and ``eta``
+            // is the learning rate."""
             vector<mat> nabla_w;
             vector<mat> nabla_b;
             for (size_t i = 1; i < num_layers_; i++) {
@@ -107,6 +116,10 @@ namespace deep_learning_cpp {
         }
 
         void backprop(const mat &x, const mat &y, vector<mat> &nabla_w, vector<mat> &nabla_b) {
+            //   Return  ``(nabla_b, nabla_w)`` representing the
+            // gradient for the cost function C_x.  ``nabla_b`` and
+            // ``nabla_w`` are layer-by-layer vector of numpy arrays, similar
+            // to ``self.biases`` and ``self.weights``.
             auto activation = x;
             vector<mat> activations;
             vector<mat> zs;
@@ -130,6 +143,10 @@ namespace deep_learning_cpp {
         }
 
         size_t evaluate(const vector<pair<mat, mat>> &test_data) const {
+            //   Return the number of test inputs for which the neural
+            // network outputs the correct result. Note that the neural
+            // network's output is assumed to be the index of whichever
+            // neuron in the final layer has the highest activation.
             size_t result = 0;
             for (const auto &item : test_data) {
                 auto max_index = feedforward(item.first).index_max();
@@ -139,14 +156,18 @@ namespace deep_learning_cpp {
         }
 
         mat cost_derivative(const mat &output_activations, const mat &y) const {
+            //   Return the partial derivatives \partial C_x /
+            //partial a for the output activations.
             return output_activations - y;
         }
 
         mat sigmoid(const mat &z) const {
+            // The sigmoid function.
             return 1.0 / (1.0 + exp(-z));
         }
 
         mat sigmoid_prime(const mat &z) const {
+            // Derivative of the sigmoid function.
             return sigmoid(z) % (1 - sigmoid(z));
         }
 
