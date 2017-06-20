@@ -24,8 +24,9 @@ namespace deep_learning_cpp {
     using arma::exp;
     using arma::zeros;
 
-    pair<vector<pair<mat, mat>>, vector<pair<mat, mat>>> load_data_wrapper() {
+    std::tuple<vector<pair<mat, mat>>, vector<pair<mat, mat>>, vector<pair<mat, mat>>> load_data_wrapper() {
         vector<pair<mat, mat>> training_data(50000, {zeros(784, 1), zeros(10, 1)});
+        vector<pair<mat, mat>> validation_data(10000, {zeros(784, 1), zeros(10, 1)});
         vector<pair<mat, mat>> test_data(10000, {zeros(784, 1), zeros(10, 1)});
         ifstream train_inputs_file("../data/train-images-idx3-ubyte", std::ios::binary);
         ifstream train_results_file("../data/train-labels-idx1-ubyte", std::ios::binary);
@@ -59,6 +60,12 @@ namespace deep_learning_cpp {
             }
             training_data[i].second((size_t) train_results_buffer[t2++], 0) = 1;
         }
+        for (size_t i = 0; i < 10000; i++) {
+            for (size_t j = 0; j < 784; j++) {
+                validation_data[i].first(j, 0) = ((unsigned char) train_inputs_buffer[t1++]) / 255.0;
+            }
+            validation_data[i].second((size_t) train_results_buffer[t2++], 0) = 1;
+        }
         t1 = 16, t2 = 8;
         for (size_t i = 0; i < 10000; i++) {
             for (size_t j = 0; j < 784; j++) {
@@ -66,6 +73,6 @@ namespace deep_learning_cpp {
             }
             test_data[i].second((size_t) test_results_buffer[t2++], 0) = 1;
         }
-        return {training_data, test_data};
+        return std::make_tuple(training_data, validation_data, test_data);
     };
 }
